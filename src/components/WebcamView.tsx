@@ -19,11 +19,15 @@ const WebcamView = () => {
 
   // Capture function
   const handleCapture = useCallback(async () => {
-    console.log('Starting capture process...')
+    console.log('🎬 Starting capture process...')
+    console.log('📹 Video ref:', !!videoRef.current)
+    console.log('🖼️ Canvas ref:', !!captureCanvasRef.current)
+    console.log('📊 Detections:', detections.length)
+    
     setIsCapturing(true)
     
     if (!videoRef.current || !captureCanvasRef.current) {
-      console.error('Video or canvas ref not available')
+      console.error('❌ Video or canvas ref not available')
       setIsCapturing(false)
       return
     }
@@ -62,8 +66,10 @@ const WebcamView = () => {
     
     // Upload file to backend
     try {
+      console.log('📤 Preparing upload...')
       const formData = new FormData()
       formData.append('image', file)
+      console.log('📁 File added to FormData:', file.name, file.size, 'bytes')
       
       // Add face coordinates if available
       if (detections.length > 0) {
@@ -75,16 +81,22 @@ const WebcamView = () => {
           confidence: detections[0].score
         }
         formData.append('faceCoordinates', JSON.stringify(faceData))
+        console.log('👤 Face coordinates added:', faceData)
+      } else {
+        console.log('⚠️ No face detections available for coordinates')
       }
       
+      console.log('🚀 Sending POST request to /api/captures...')
       const response = await fetch('http://localhost:3002/api/captures', {
         method: 'POST',
         body: formData
       })
       
+      console.log('📡 Response received:', response.status, response.statusText)
+      
       if (response.ok) {
         const result = await response.json()
-        console.log('Image uploaded successfully:', result)
+        console.log('✅ Image uploaded successfully:', result)
         setLastCapture(new Date().toLocaleTimeString())
         
         // Add to gallery
@@ -96,12 +108,15 @@ const WebcamView = () => {
           imageUrl: `http://localhost:3002/captures/${result.data.filename}`
         }
         setCapturedImages(prev => [newImage, ...prev])
+        console.log('🖼️ Image added to gallery:', newImage)
       } else {
-        console.error('Upload failed:', response.status, response.statusText)
+        const errorText = await response.text()
+        console.error('❌ Upload failed:', response.status, response.statusText, errorText)
       }
     } catch (error) {
-      console.error('Error uploading image:', error)
+      console.error('💥 Error uploading image:', error)
     } finally {
+      console.log('🏁 Capture process finished')
       setIsCapturing(false)
     }
   }, [detections])
@@ -171,7 +186,8 @@ const WebcamView = () => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.code === 'Space') {
         event.preventDefault() // Prevent default spacebar behavior
-        console.log('Spacebar pressed - capturing image...')
+        console.log('⌨️ Spacebar pressed - capturing image...')
+        console.log('📊 Current state:', { isCapturing, isStreaming, detections: detections.length })
         handleCapture()
       }
     }
