@@ -113,26 +113,45 @@ app.post('/api/captures', upload.single('image'), async (req, res) => {
       });
     }
 
-    // Parse face coordinates from request body
-    let faceData: FaceData | null = null;
-    if (req.body.faceCoordinates) {
-      try {
-        faceData = JSON.parse(req.body.faceCoordinates);
-      } catch (error) {
-        console.warn('Invalid face coordinates format:', error);
-      }
-    }
-
-    // Process image if face coordinates are provided
-    let processedImagePath = req.file.filename;
-    if (faceData) {
-      const processResult = await processCapture(req.file.path, faceData);
-      if (processResult.success && processResult.finalPath) {
-        processedImagePath = processResult.finalPath;
+      // Check if image is already processed (PNG with transparency)
+      let processedImagePath = req.file.filename;
+      const isAlreadyProcessed = req.file.mimetype === 'image/png';
+      
+      if (isAlreadyProcessed) {
+        console.log('✅ Image already processed with background removal (PNG)');
+        // Move to captures directory directly
+        const capturesDir = path.join(__dirname, '../captures');
+        if (!fs.existsSync(capturesDir)) {
+          fs.mkdirSync(capturesDir, { recursive: true });
+        }
+        
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const newFilename = `smile_${timestamp}.png`;
+        const newPath = path.join(capturesDir, newFilename);
+        
+        await fs.promises.rename(req.file.path, newPath);
+        processedImagePath = newFilename;
+        console.log('📁 Moved processed image to captures directory:', newFilename);
       } else {
-        console.warn('Image processing failed:', processResult.error);
+        // Process image if it's not already processed
+        let faceData: FaceData | null = null;
+        if (req.body.faceCoordinates) {
+          try {
+            faceData = JSON.parse(req.body.faceCoordinates);
+          } catch (error) {
+            console.warn('Invalid face coordinates format:', error);
+          }
+        }
+
+        if (faceData) {
+          const processResult = await processCapture(req.file.path, faceData);
+          if (processResult.success && processResult.finalPath) {
+            processedImagePath = processResult.finalPath;
+          } else {
+            console.warn('Image processing failed:', processResult.error);
+          }
+        }
       }
-    }
 
     // Insert record into database
     const result = await db.run(
@@ -154,15 +173,15 @@ app.post('/api/captures', upload.single('image'), async (req, res) => {
       ]
     );
 
-    // Clean up temporary file if image was processed
-    if (faceData && processedImagePath !== req.file.filename) {
-      try {
-        await fs.promises.unlink(req.file.path);
-        console.log('Temporary file cleaned up:', req.file.path);
-      } catch (error) {
-        console.warn('Failed to clean up temporary file:', error);
+      // Clean up temporary file if image was processed and moved
+      if (isAlreadyProcessed || (processedImagePath !== req.file.filename)) {
+        try {
+          await fs.promises.unlink(req.file.path);
+          console.log('🗑️ Temporary file cleaned up:', req.file.path);
+        } catch (error) {
+          console.warn('⚠️ Failed to clean up temporary file:', error);
+        }
       }
-    }
 
     res.status(201).json({
       success: true,

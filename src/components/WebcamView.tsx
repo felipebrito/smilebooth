@@ -17,6 +17,56 @@ const WebcamView = () => {
 
   const { detections, error: detectionError, isSmiling, smileThreshold, setSmileThreshold } = useFaceDetection(videoRef)
 
+  // Process image with background removal
+  const processImageWithBackgroundRemoval = async (
+    canvas: HTMLCanvasElement, 
+    detection: any, 
+    video: HTMLVideoElement
+  ): Promise<HTMLCanvasElement> => {
+    console.log('🎨 Starting background removal process...')
+    
+    // Create a new canvas for the processed image
+    const processedCanvas = document.createElement('canvas')
+    const processedCtx = processedCanvas.getContext('2d')
+    if (!processedCtx) {
+      console.error('❌ Could not get processed canvas context')
+      return canvas
+    }
+    
+    // Calculate face coordinates in canvas pixels
+    const faceX = detection.boundingBox.xCenter * video.videoWidth - (detection.boundingBox.width * video.videoWidth / 2)
+    const faceY = detection.boundingBox.yCenter * video.videoHeight - (detection.boundingBox.height * video.videoHeight / 2)
+    const faceWidth = detection.boundingBox.width * video.videoWidth
+    const faceHeight = detection.boundingBox.height * video.videoHeight
+    
+    console.log('👤 Face coordinates:', { faceX, faceY, faceWidth, faceHeight })
+    
+    // Set processed canvas size to face dimensions
+    processedCanvas.width = faceWidth
+    processedCanvas.height = faceHeight
+    
+    // Create circular mask
+    processedCtx.save()
+    processedCtx.beginPath()
+    const centerX = faceWidth / 2
+    const centerY = faceHeight / 2
+    const radius = Math.min(faceWidth, faceHeight) / 2
+    processedCtx.arc(centerX, centerY, radius, 0, 2 * Math.PI)
+    processedCtx.clip()
+    
+    // Draw the face region with circular clipping
+    processedCtx.drawImage(
+      canvas,
+      faceX, faceY, faceWidth, faceHeight, // Source rectangle
+      0, 0, faceWidth, faceHeight // Destination rectangle
+    )
+    
+    processedCtx.restore()
+    
+    console.log('✅ Background removal completed')
+    return processedCanvas
+  }
+
   // Capture function
   const handleCapture = useCallback(async () => {
     console.log('🎬 Starting capture process...')
@@ -49,19 +99,27 @@ const WebcamView = () => {
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
     console.log('Frame captured to canvas')
     
-    // Convert canvas to blob
+    // Process image with background removal if face is detected
+    let processedCanvas = canvas
+    
+    if (detections.length > 0) {
+      console.log('🎨 Processing image with background removal...')
+      processedCanvas = await processImageWithBackgroundRemoval(canvas, detections[0], video)
+    }
+    
+    // Convert processed canvas to blob
     const blob = await new Promise<Blob>((resolve, reject) => {
-      canvas.toBlob((blob) => {
+      processedCanvas.toBlob((blob) => {
         if (blob) {
           resolve(blob)
         } else {
           reject(new Error('Failed to create blob from canvas'))
         }
-      }, 'image/jpeg', 0.8)
+      }, 'image/png', 1.0) // PNG for transparency
     })
     
     // Create File object
-    const file = new File([blob], `capture_${Date.now()}.jpg`, { type: 'image/jpeg' })
+    const file = new File([blob], `smile_${Date.now()}.png`, { type: 'image/png' })
     console.log('File created:', { name: file.name, size: file.size, type: file.type })
     
     // Upload file to backend
@@ -71,20 +129,8 @@ const WebcamView = () => {
       formData.append('image', file)
       console.log('📁 File added to FormData:', file.name, file.size, 'bytes')
       
-      // Add face coordinates if available
-      if (detections.length > 0) {
-        const faceData = {
-          x: detections[0].boundingBox.xCenter * video.videoWidth - (detections[0].boundingBox.width * video.videoWidth / 2),
-          y: detections[0].boundingBox.yCenter * video.videoHeight - (detections[0].boundingBox.height * video.videoHeight / 2),
-          width: detections[0].boundingBox.width * video.videoWidth,
-          height: detections[0].boundingBox.height * video.videoHeight,
-          confidence: detections[0].score
-        }
-        formData.append('faceCoordinates', JSON.stringify(faceData))
-        console.log('👤 Face coordinates added:', faceData)
-      } else {
-        console.log('⚠️ No face detections available for coordinates')
-      }
+      // Note: Image is already processed with background removal in frontend
+      console.log('📝 Image pre-processed with background removal')
       
       console.log('🚀 Sending POST request to /api/captures...')
       const response = await fetch('http://localhost:3002/api/captures', {
