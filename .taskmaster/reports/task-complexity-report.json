@@ -1,0 +1,133 @@
+{
+	"meta": {
+		"generatedAt": "2025-09-23T22:34:21.281Z",
+		"tasksAnalyzed": 15,
+		"totalTasks": 15,
+		"analysisCount": 15,
+		"thresholdScore": 5,
+		"projectName": "Taskmaster",
+		"usedResearch": true
+	},
+	"complexityAnalysis": [
+		{
+			"taskId": 1,
+			"taskTitle": "Initialize Frontend Project and Install Core Dependencies",
+			"complexityScore": 2,
+			"recommendedSubtasks": 3,
+			"expansionPrompt": "Break this task into three subtasks: 1. Install `@mediapipe/tasks-vision`, `@headlessui/react`, and `@heroicons/react` using pnpm. 2. Configure `tailwind.config.js` and `postcss.config.js` and add the required Tailwind directives to `src/index.css`. 3. Remove all boilerplate content from `src/App.tsx`, `src/App.css`, and the `src/assets` directory, leaving a minimal 'Hello World' component.",
+			"reasoning": "Codebase analysis confirms this is a fresh Vite project. The task is low complexity, involving standard package installation, configuration file edits, and boilerplate cleanup. It's not a single action, but a series of procedural steps. Breaking it into dependency installation, configuration, and cleanup creates clear, verifiable steps."
+		},
+		{
+			"taskId": 2,
+			"taskTitle": "Create Basic UI Layout and Webcam Component",
+			"complexityScore": 3,
+			"recommendedSubtasks": 2,
+			"expansionPrompt": "Expand this into two subtasks: 1. Create the basic application layout in `App.tsx` using Tailwind CSS, including placeholders for a header, the main video feed, and a capture gallery. 2. Implement the `components/WebcamView.tsx` component, which requests camera permissions using `navigator.mediaDevices.getUserMedia` and streams the feed to a `<video>` element.",
+			"reasoning": "This is greenfield component development. The complexity is low-medium, primarily due to interacting with the browser's `getUserMedia` API, which involves asynchronous operations and permission handling. Separating the static layout (`App.tsx`) from the component with hardware interaction logic (`WebcamView.tsx`) is a clean architectural split."
+		},
+		{
+			"taskId": 3,
+			"taskTitle": "Integrate MediaPipe for Real-time Face Detection",
+			"complexityScore": 6,
+			"recommendedSubtasks": 3,
+			"expansionPrompt": "Break this down into three subtasks: 1. Create a custom hook `hooks/useFaceDetection.ts` that initializes the MediaPipe `FaceDetector` and runs a `requestAnimationFrame` loop to process video frames. 2. Create a `components/FaceOverlay.tsx` component that accepts detection results and draws bounding boxes on an absolutely positioned `<canvas>`. 3. Integrate the `useFaceDetection` hook and `FaceOverlay` component into the main view, passing the video element ref to the hook and the hook's output to the overlay.",
+			"reasoning": "This is a core feature involving a third-party computer vision library. The complexity is medium, requiring management of an async library, a performant `requestAnimationFrame` loop, and coordinate mapping between a video and a canvas. Separating the detection logic (hook) from the rendering logic (component) and then integrating them is a robust approach."
+		},
+		{
+			"taskId": 4,
+			"taskTitle": "Set up Node.js/Express Backend with TypeScript and SQLite",
+			"complexityScore": 3,
+			"recommendedSubtasks": 3,
+			"expansionPrompt": "Expand this into three subtasks: 1. In a new `/backend` directory, initialize a Node.js project, install dependencies (`express`, `typescript`, `sqlite3`, etc.), and configure `tsconfig.json` and `package.json` scripts for `dev` and `build`. 2. Create the main server file `src/index.ts` to set up an Express app with `cors` middleware and a `GET /api/health` endpoint. 3. Create a database module (`src/db/index.ts`) and an initialization script that connects to a SQLite file and creates the `captures` table if it doesn't exist.",
+			"reasoning": "Codebase analysis shows no backend exists, so this is a greenfield setup. The complexity is low-medium, involving standard backend project scaffolding. It has several distinct parts: project/tooling setup, web server setup, and database setup. Breaking it down this way makes the process modular and easy to verify at each stage."
+		},
+		{
+			"taskId": 5,
+			"taskTitle": "Implement Basic Image Capture and API Storage",
+			"complexityScore": 5,
+			"recommendedSubtasks": 2,
+			"expansionPrompt": "Divide this into two subtasks for frontend and backend. 1. (Backend) Implement the `POST /api/captures` endpoint in the Express app. Use `multer` to process a single file upload, save it to the `uploads/` directory, and insert a corresponding record into the SQLite `captures` table. 2. (Frontend) Add a 'Capture' button to the UI. On click, implement a function that draws the current video frame to a temporary canvas, gets the image as a Blob, and sends it via a `fetch` POST request as `FormData` to the backend.",
+			"reasoning": "This is a full-stack feature connecting the client and server. The complexity is medium due to the coordination required. Frontend involves canvas manipulation and `FormData` creation. Backend involves `multer` for file handling, filesystem writes, and database inserts. A clear frontend/backend split is the most logical way to divide the work."
+		},
+		{
+			"taskId": 6,
+			"taskTitle": "Implement Smile Detection using MediaPipe Blendshapes",
+			"complexityScore": 5,
+			"recommendedSubtasks": 2,
+			"expansionPrompt": "Break this into two subtasks focused on the `useFaceDetection` hook. 1. Refactor the hook to initialize and use `FaceLandmarker` instead of `FaceDetector`, updating the model asset paths and configuration to request `faceBlendshapes`. 2. Add logic inside the hook's detection loop to process the `faceBlendshapes` result, check the `mouthSmileLeft` and `mouthSmileRight` scores against a configurable threshold, and expose a new `isSmiling` boolean in the hook's return value.",
+			"reasoning": "This task refactors the existing (but new) `useFaceDetection` hook. The complexity is medium as it requires using a more advanced MediaPipe API (`FaceLandmarker`) and interpreting specific data points (blendshapes) rather than just a bounding box. Separating the setup/configuration change from the implementation of the smile-checking logic is a clean way to approach the refactor."
+		},
+		{
+			"taskId": 7,
+			"taskTitle": "Trigger Automatic Capture on Smile",
+			"complexityScore": 4,
+			"recommendedSubtasks": 2,
+			"expansionPrompt": "Divide this into two subtasks. 1. In the main component, create a `useEffect` hook that depends on the `isSmiling` state from the `useFaceDetection` hook. Implement logic to detect when `isSmiling` changes from `false` to `true` and call the image capture function. 2. Implement a cooldown mechanism. After a capture is triggered, set a 'cooling down' state to `true` for a specified duration (e.g., 5 seconds) using `setTimeout`. Prevent new auto-captures while this state is `true`.",
+			"reasoning": "This task involves React state management and orchestrating other features. The complexity is low-medium, centered on correctly implementing the state transition detection (edge detection) in `useEffect` and managing a cooldown timer. Separating the core trigger logic from the cooldown logic allows for focused implementation of each part."
+		},
+		{
+			"taskId": 8,
+			"taskTitle": "Implement Server-Side Face Cropping with Sharp.js",
+			"complexityScore": 6,
+			"recommendedSubtasks": 3,
+			"expansionPrompt": "Break this into three subtasks. 1. (Frontend) Update the capture logic to retrieve the current face bounding box from the detection hook and append its coordinates to the `FormData` payload. 2. (Backend) Install `sharp` and update the `POST /api/captures` endpoint to parse the bounding box coordinates from the multipart request body. 3. (Backend) In the same endpoint, after the initial upload, use `sharp` to load the image, apply the `extract` operation with the received coordinates, and save the result as a new PNG file, then update the database path.",
+			"reasoning": "This is a medium-complexity, full-stack task. It requires modifying both frontend and backend, introducing a powerful new backend dependency (`sharp`), and passing new data (coordinates) between them. Potential coordinate system mismatches add risk. Splitting into frontend data sending, backend data receiving, and backend image processing isolates the distinct areas of work."
+		},
+		{
+			"taskId": 9,
+			"taskTitle": "Add Keyboard Shortcut for Manual Capture",
+			"complexityScore": 2,
+			"recommendedSubtasks": 1,
+			"expansionPrompt": "Implement a `useEffect` hook in the main `App.tsx` component. This hook should add a `keydown` event listener to the `window` object. Inside the listener, check if the pressed key is 'Space' or 'Enter'. If so, call `event.preventDefault()` and trigger the existing manual image capture function. Ensure the event listener is removed in the effect's cleanup function.",
+			"reasoning": "This is a small, self-contained UI feature. The complexity is low, as it involves a standard React pattern for handling global DOM events within a `useEffect` hook. The task is too small and cohesive to warrant further breakdown."
+		},
+		{
+			"taskId": 10,
+			"taskTitle": "Create API and UI for Capture History",
+			"complexityScore": 4,
+			"recommendedSubtasks": 3,
+			"expansionPrompt": "Expand this into three subtasks. 1. (Backend) Create a `GET /api/captures` endpoint that queries the SQLite database for all captures, orders them by timestamp descending, and returns an array of capture metadata. 2. (Frontend) Create a new `components/CaptureGallery.tsx` component that fetches data from `/api/captures` when it mounts and stores the result in state. 3. (Frontend) In `CaptureGallery.tsx`, map over the fetched data to render a list or grid of images. For each image, set the `src` attribute to a URL like `/api/captures/{capture.id}/image`.",
+			"reasoning": "A standard full-stack feature. The backend part is a simple database query. The frontend involves creating a new component, fetching data, and managing loading/error/success states. The complexity is low-medium. Separating API creation, client-side data fetching, and client-side rendering is a standard and effective workflow."
+		},
+		{
+			"taskId": 11,
+			"taskTitle": "Implement Remaining Capture API Endpoints",
+			"complexityScore": 4,
+			"recommendedSubtasks": 3,
+			"expansionPrompt": "Break this task down by endpoint. 1. Implement the `GET /api/captures/:id` route to fetch and return a single capture's metadata from the database. 2. Implement the `GET /api/captures/:id/image` route to retrieve the image path from the database, read the file from disk, and send it as the response with the appropriate `Content-Type` header. 3. Implement the `DELETE /api/captures/:id` route to first delete the record from the database, then delete the corresponding image file from the filesystem.",
+			"reasoning": "This backend task involves creating three distinct API endpoints. The complexity is elevated slightly by the image streaming endpoint and the need for a two-step (DB and filesystem) delete operation. Breaking the task down by endpoint is the most natural division of labor, as each can be built and tested independently."
+		},
+		{
+			"taskId": 12,
+			"taskTitle": "Add Visual Feedback for Detection and Capture",
+			"complexityScore": 2,
+			"recommendedSubtasks": 2,
+			"expansionPrompt": "Divide this into two subtasks for each visual effect. 1. Update the `FaceOverlay.tsx` component to accept a boolean prop (e.g., `isSmiling`). Pass the `isSmiling` state to it and use this prop to conditionally change the color of the canvas drawing for the bounding box. 2. Define a CSS keyframe animation for a screen flash. In the capture function, add logic to apply a corresponding CSS class to the main app container, then remove it after the animation duration using `setTimeout`.",
+			"reasoning": "This is a low-complexity frontend UI/UX enhancement. It involves minor state passing and CSS work. The two feedback mechanisms (bounding box color and screen flash) are entirely independent and affect different parts of the application, making them ideal to implement as separate subtasks."
+		},
+		{
+			"taskId": 13,
+			"taskTitle": "Create UI for Configuring Smile Sensitivity",
+			"complexityScore": 3,
+			"recommendedSubtasks": 2,
+			"expansionPrompt": "Break this into two subtasks. 1. Create a `SettingsModal.tsx` component using Headless UI's Dialog. Add a styled `<input type='range'>` for the sensitivity slider and an icon button to control the modal's visibility. 2. Lift the `smileThreshold` state to the main `App.tsx` component. Pass the state and its setter to the `SettingsModal` and pass the state value as a prop to the `useFaceDetection` hook, modifying the hook to accept it.",
+			"reasoning": "This is a standard UI feature involving state management. The complexity is low-medium, mainly involving component creation and state plumbing. Using a library like Headless UI simplifies the modal logic. Separating the creation of the presentational UI component from the state management logic in the parent is a good React pattern."
+		},
+		{
+			"taskId": 14,
+			"taskTitle": "Enhance API with Filtering and Pagination",
+			"complexityScore": 4,
+			"recommendedSubtasks": 3,
+			"expansionPrompt": "Expand this into three subtasks for the `GET /api/captures` endpoint. 1. Implement pagination by reading `page` and `limit` query parameters and applying `LIMIT` and `OFFSET` to the SQL query. 2. In the same endpoint, execute a second query to get the total count of all records (ignoring pagination) and add both the paginated results and the total count to the JSON response. 3. Enhance the endpoint to read optional `startDate` and `endDate` query parameters and dynamically build a `WHERE` clause to filter the results by the `createdAt` timestamp.",
+			"reasoning": "This backend task modifies an existing endpoint to add significant new functionality. The complexity is medium, as it requires building dynamic SQL queries, which can be tricky. Separating the implementation of pagination, total count retrieval, and date filtering allows for incremental development and testing of each feature."
+		},
+		{
+			"taskId": 15,
+			"taskTitle": "Offload Face Detection to a Web Worker",
+			"complexityScore": 8,
+			"recommendedSubtasks": 4,
+			"expansionPrompt": "Break this complex refactor into four subtasks. 1. Create a `workers/detection.worker.ts` file and configure `vite.config.ts` to handle the web worker bundling. 2. Move all MediaPipe `FaceLandmarker` initialization, configuration, and the core detection call into the worker. The worker should listen for messages containing image data. 3. Refactor the `useFaceDetection` hook: remove the direct MediaPipe logic and instead initialize the worker. In the `requestAnimationFrame` loop, send the video frame to the worker using `postMessage`. 4. In the hook, add a message listener for the worker's response. When a 'results' message is received, update the hook's state (bounding box, isSmiling) to trigger UI updates on the main thread.",
+			"reasoning": "This is a high-complexity performance optimization. It's a major architectural refactor that introduces concurrency via Web Workers. This involves build tool configuration, asynchronous communication (`postMessage`), managing separate scopes, and efficient data transfer. Breaking it down into build setup, worker logic, main thread refactoring, and communication handling is essential to manage the complexity."
+		}
+	]
+}

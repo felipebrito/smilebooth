@@ -1,0 +1,541 @@
+{
+  "master": {
+    "tasks": [
+      {
+        "id": 17,
+        "title": "Setup Node.js/Express Backend with SQLite",
+        "description": "Initialize a new Node.js backend service using Express. Configure SQLite as the database and create the initial 'captures' table schema as defined in the PRD.",
+        "details": "Create a new directory for the Node.js backend. Initialize a `package.json` and install dependencies: `express`, `sqlite3`, `cors`. Create the main server file (`index.js` or `server.js`). Implement the database initialization logic to create the `captures` table if it doesn't exist, using the schema from the PRD. Add a basic `GET /api/health` endpoint to check if the server is running.",
+        "testStrategy": "Run the Node.js server. Verify that a `database.sqlite` file is created. Use a database client to inspect the `captures` table and confirm its columns match the PRD. Make a GET request to `/api/health` and expect a 200 OK response.",
+        "priority": "high",
+        "dependencies": [],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Initialize Backend Project and Install Dependencies",
+            "description": "Create a new directory named 'backend' for the Node.js service. Inside this directory, initialize a `package.json` file and install the necessary dependencies: `express`, `sqlite3`, and `cors`.",
+            "dependencies": [],
+            "details": "Execute the following commands in the project root: `mkdir backend`, `cd backend`, `npm init -y`, and `npm install express sqlite3 cors`. Also, create a `.gitignore` file in the `backend` directory and add `node_modules/` and `*.sqlite` to it.",
+            "status": "done",
+            "testStrategy": "Verify that the `backend` directory, `package.json`, `package-lock.json`, and `node_modules` directory are created. Check `package.json` to confirm `express`, `sqlite3`, and `cors` are listed as dependencies."
+          },
+          {
+            "id": 2,
+            "title": "Create Basic Express Server with CORS",
+            "description": "Create a `server.js` file in the `backend` directory. This file will set up a basic Express application, apply the CORS middleware, and start the server to listen on a port (e.g., 3001).",
+            "dependencies": [
+              "17.1"
+            ],
+            "details": "In `server.js`, require `express` and `cors`. Initialize the app, use `app.use(cors())` and `app.use(express.json())`. Make the app listen on a port and log a confirmation message to the console upon starting.",
+            "status": "done",
+            "testStrategy": "Run `node server.js` from the `backend` directory. Verify that the console logs the server start message without any errors."
+          },
+          {
+            "id": 3,
+            "title": "Implement SQLite Database Connection Module",
+            "description": "Create a new file, `backend/database.js`, to manage the SQLite database connection. This module will create and export a single database instance to be used throughout the application.",
+            "dependencies": [
+              "17.1"
+            ],
+            "details": "In `database.js`, import the `sqlite3` module. Create a new database instance by connecting to a file (e.g., `database.sqlite`). Export the `db` object for use in other files. Handle any potential connection errors.",
+            "status": "done",
+            "testStrategy": "When the server is started for the first time, verify that a `database.sqlite` file is created in the `backend` directory."
+          },
+          {
+            "id": 4,
+            "title": "Implement 'captures' Table Initialization Logic",
+            "description": "In the `database.js` module, add a function that creates the `captures` table if it doesn't already exist. This function should be called from `server.js` when the application starts.",
+            "dependencies": [
+              "17.3"
+            ],
+            "details": "Using the exported `db` instance, execute a `CREATE TABLE IF NOT EXISTS captures (...)` SQL command. The table schema must include: `id` (INTEGER PRIMARY KEY AUTOINCREMENT), `image_path` (TEXT NOT NULL), `capture_type` (TEXT NOT NULL), and `created_at` (TEXT NOT NULL).",
+            "status": "done",
+            "testStrategy": "Start the server. Use a SQLite database client to open the `database.sqlite` file and inspect its schema. Confirm that the `captures` table exists and its columns match the specified schema."
+          },
+          {
+            "id": 5,
+            "title": "Create a Basic Health Check Endpoint",
+            "description": "Add a `GET /api/health` endpoint to the `server.js` file to provide a simple way to verify that the server is running and responsive.",
+            "dependencies": [
+              "17.2"
+            ],
+            "details": "In `server.js`, create a new route handler for `GET /api/health`. The handler should send a JSON response with a 200 status code, for example: `{ \"status\": \"ok\", \"message\": \"Server is running\" }`.",
+            "status": "done",
+            "testStrategy": "With the server running, make a GET request to `http://localhost:3001/api/health` using a tool like `curl` or a web browser. Verify that the response is a 200 OK and the JSON body matches the expected output."
+          }
+        ]
+      },
+      {
+        "id": 18,
+        "title": "Create Image Upload Endpoint and Initial DB Record",
+        "description": "Implement a `POST /api/captures` endpoint using Express and Multer to handle image uploads from the frontend. The endpoint should save the raw image and create a corresponding entry in the 'captures' database table.",
+        "details": "Install and configure `multer` for handling `multipart/form-data`. The endpoint should accept a single image file. Upon receiving the file, save it to a temporary location. Then, insert a new record into the `captures` table with initial metadata (e.g., timestamp, initial filename). The image processing will be handled in a subsequent task.",
+        "testStrategy": "Use a tool like Postman or curl to send a POST request with an image file to `/api/captures`. Verify that the server returns a 201 Created status. Check the server's file system to ensure the image was saved. Query the SQLite database to confirm a new row was added to the `captures` table.",
+        "priority": "high",
+        "dependencies": [
+          17
+        ],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Install Multer and Create Uploads Directory",
+            "description": "Add the `multer` package to the project's dependencies and create a directory at `server/uploads` to store the raw uploaded images.",
+            "dependencies": [],
+            "details": "Run `npm install multer` in the project's root or `server` directory. Create a new directory named `uploads` inside the `server` directory. This directory will be used by Multer to store incoming files. It's also recommended to add `server/uploads/` to the `.gitignore` file to prevent raw uploads from being committed to version control.",
+            "status": "done",
+            "testStrategy": "Verify that `multer` is added to `package.json`. Check that the `server/uploads` directory exists. Check that `.gitignore` is updated."
+          },
+          {
+            "id": 2,
+            "title": "Configure Multer Middleware in server/index.js",
+            "description": "In `server/index.js`, require `multer` and configure its storage engine to save files to the `server/uploads` directory with a unique name.",
+            "dependencies": [
+              "18.1"
+            ],
+            "details": "Import `multer` at the top of `server/index.js`. Use `multer.diskStorage` to define the destination as `'./uploads/'` (relative to `index.js`). For the filename, create a unique name to prevent collisions, e.g., by combining a timestamp (`Date.now()`) with the original filename. Instantiate multer with this storage configuration: `const upload = multer({ storage: storage });`.",
+            "status": "done",
+            "testStrategy": "No direct test. This configuration will be tested as part of the endpoint implementation in a later subtask."
+          },
+          {
+            "id": 3,
+            "title": "Create the POST /api/captures Route Structure",
+            "description": "Define the `POST /api/captures` endpoint in `server/index.js` and apply the configured Multer middleware to handle a single file upload named 'image'.",
+            "dependencies": [
+              "18.2"
+            ],
+            "details": "Below the existing `/api/health` route in `server/index.js`, add a new route using `app.post('/api/captures', upload.single('image'), (req, res) => { ... });`. The `upload.single('image')` middleware will process a single file uploaded in the `image` field of the multipart/form-data. The route handler will contain the logic for the next steps.",
+            "status": "done",
+            "testStrategy": "Use Postman to send a POST request (without a file yet) to `/api/captures`. The server might hang or return an error, but it shouldn't return a 404, indicating the route is registered."
+          },
+          {
+            "id": 4,
+            "title": "Implement Database Insertion for New Capture",
+            "description": "Within the `/api/captures` route handler, insert a new record into the `captures` table using the filename provided by Multer.",
+            "dependencies": [
+              "18.3"
+            ],
+            "details": "Inside the `app.post` handler, access the uploaded file's information via `req.file`. Use the imported `db` object from `./database.js` to execute an SQL `INSERT` statement. The query should be `INSERT INTO captures (original_filename) VALUES (?)`, with `req.file.filename` as the parameter. This will create the initial database record.",
+            "status": "done",
+            "testStrategy": "Send a POST request with an image file to `/api/captures`. After the request, query the `database.sqlite` file directly to confirm that a new row has been added to the `captures` table with the correct `original_filename`."
+          },
+          {
+            "id": 5,
+            "title": "Finalize Route Handler with Success Response and Error Handling",
+            "description": "Complete the `/api/captures` route handler by sending a `201 Created` response with the new record's data upon success, and implement basic error handling.",
+            "dependencies": [
+              "18.4"
+            ],
+            "details": "In the callback of the `db.run` function, use `this.lastID` to get the ID of the newly inserted row. Send a JSON response with a `201` status code, including the new capture's ID and filename: `res.status(201).json({ id: this.lastID, filename: req.file.filename });`. Add a `try...catch` block or an error-first callback pattern to handle potential errors during file upload or database insertion, responding with a `500` status and an error message.",
+            "status": "done",
+            "testStrategy": "Use Postman to send a POST request with an image file to `/api/captures`. Verify the server responds with a `201 Created` status and a JSON body containing the new capture's ID and filename. Test an error case by, for example, sending a request without a file to ensure it doesn't crash the server."
+          }
+        ]
+      },
+      {
+        "id": 19,
+        "title": "Implement Manual Capture with Spacebar Shortcut",
+        "description": "On the frontend, add a global event listener for the 'Space' key. When pressed, capture the current frame from the webcam and upload it to the new Node.js backend endpoint.",
+        "details": "In the main React component managing the webcam feed, use a `useEffect` hook to add and clean up a `keydown` event listener. When the spacebar is pressed, use the canvas API to get a `Blob` or `File` object from the video element. Use `FormData` to append the image file and send it via a `fetch` or `axios` POST request to the `/api/captures` endpoint created in the previous task.",
+        "testStrategy": "Run the frontend and backend applications. Press the spacebar. Verify in the browser's network tab that a POST request is sent to `/api/captures`. Check the backend to confirm the image was received and a database record was created.",
+        "priority": "medium",
+        "dependencies": [
+          18
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Add Keydown Event Listener for Spacebar in CameraFeed",
+            "description": "In the `frontend/src/components/CameraFeed/CameraFeed.jsx` component, implement a `useEffect` hook to add and clean up a global `keydown` event listener on the `window` object. This listener will trigger a handler function when the 'Space' key is pressed.",
+            "dependencies": [],
+            "details": "Create a new `useEffect` hook. Inside it, define a function `handleKeyDown(event)` that checks `if (event.code === 'Space')`. Add this function as an event listener for 'keydown' on the `window` object. The hook's cleanup function must remove this event listener to prevent memory leaks.",
+            "status": "pending",
+            "testStrategy": "Run the frontend application. Open the browser console. Press the spacebar and verify that a log message from the `handleKeyDown` function appears. Press other keys and verify nothing is logged."
+          },
+          {
+            "id": 2,
+            "title": "Create a Capture Function and a Hidden Canvas Element",
+            "description": "In `CameraFeed.jsx`, create a new `useRef` for a hidden canvas element and an asynchronous function `handleCapture`. Connect this function to be called by the spacebar event listener created in the previous subtask.",
+            "dependencies": [
+              "19.1"
+            ],
+            "details": "Add `const captureCanvasRef = useRef(null);` and include `<canvas ref={captureCanvasRef} style={{ display: 'none' }} />` in the component's JSX. Create an `async` function named `handleCapture`. Modify the `handleKeyDown` function to call `handleCapture()` and prevent the default spacebar action (`event.preventDefault()`).",
+            "status": "pending",
+            "testStrategy": "With the console open, press the spacebar. Verify that any default browser behavior (like scrolling) is prevented and that a log message from within the `handleCapture` function is displayed."
+          },
+          {
+            "id": 3,
+            "title": "Implement Frame Capture from Video to Canvas",
+            "description": "Inside the `handleCapture` function in `CameraFeed.jsx`, implement the logic to draw the current frame from the `videoRef` element onto the hidden `captureCanvasRef` element.",
+            "dependencies": [
+              "19.2"
+            ],
+            "details": "Access the video and canvas elements via their refs. Set the canvas dimensions to match the video's intrinsic dimensions (`videoRef.current.videoWidth` and `videoRef.current.videoHeight`). Get the 2D rendering context of the canvas and use `ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height)` to perform the capture.",
+            "status": "pending",
+            "testStrategy": "This is a non-visual step. The primary verification will be in the next subtask. For immediate testing, you could temporarily make the canvas visible to confirm the image is drawn correctly when the spacebar is pressed."
+          },
+          {
+            "id": 4,
+            "title": "Convert Canvas Image to a File Object",
+            "description": "Extend the `handleCapture` function to convert the image on the canvas into a `Blob` and then into a `File` object suitable for uploading.",
+            "dependencies": [
+              "19.3"
+            ],
+            "details": "Use the `canvas.toBlob()` method to get an image blob. Since `toBlob` is callback-based, wrap it in a `Promise` for easier use with `async/await`. Once you have the blob, create a `File` object from it, e.g., `new File([blob], 'capture.jpg', { type: 'image/jpeg' })`. Log the resulting file object to the console to verify its creation.",
+            "status": "pending",
+            "testStrategy": "Press the spacebar. Check the browser console to confirm that a `File` object is created and logged, showing properties like name, size, and type."
+          },
+          {
+            "id": 5,
+            "title": "Upload Captured Image via POST Request",
+            "description": "Implement the final step in `handleCapture` to upload the generated `File` object to the backend `/api/captures` endpoint using a `fetch` POST request.",
+            "dependencies": [
+              "19.4"
+            ],
+            "details": "Create a `FormData` object. Append the `File` object to it using `formData.append('image', file)`. Use the `fetch` API to send a `POST` request to `/api/captures` with the `formData` as the body. Do not set the `Content-Type` header manually; the browser will set it correctly for `FormData`. Add basic logging for success or failure of the request.",
+            "status": "pending",
+            "testStrategy": "Run both frontend and backend. Press the spacebar. Open the browser's Network tab and verify a POST request is sent to `/api/captures` with a multipart/form-data payload. Check the backend server logs and the `captures/` directory to confirm the file was received and saved."
+          }
+        ]
+      },
+      {
+        "id": 20,
+        "title": "Implement Face Cropping and Background Removal with Sharp.js",
+        "description": "Create a server-side processing module that uses Sharp.js to crop the uploaded image to the face area and remove the background, saving it as a transparent PNG.",
+        "details": "Install `sharp`. This task might require coordinates for the face, which should be sent from the frontend along with the image. The processing logic should take the raw uploaded image, apply the crop, use Sharp's capabilities for background removal (or a simpler method like creating a circular mask around the face), convert to PNG with an alpha channel, and save it to the `captures/` folder with the final `smile_YYYYMMDD_HHMMSS.png` naming convention. Update the database record with the final path and metadata.",
+        "testStrategy": "Trigger an image upload via the manual capture feature. After the upload, inspect the `captures/` directory on the server. Verify that a processed PNG file with a transparent background exists. The image should only contain the cropped face. Check the database to ensure the `image_path` and other metadata fields are correctly updated.",
+        "priority": "high",
+        "dependencies": [
+          18
+        ],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Install Sharp.js and Create Image Processing Service",
+            "description": "Add `sharp` as a project dependency and create a new service file to encapsulate all image manipulation logic. This service will expose a function to be called by the capture controller.",
+            "dependencies": [],
+            "details": "Run `npm install sharp`. Create a new file at `backend/services/imageProcessor.js`. In this file, define and export an initial async function, `processCapture(filePath, faceData)`, which will serve as the entry point for all Sharp-related processing. For now, this function can simply log its arguments.",
+            "status": "done",
+            "testStrategy": "Verify that `sharp` is added to `package.json`. Check that the `backend/services/imageProcessor.js` file exists with the exported `processCapture` function. No functional tests are needed for this setup task."
+          },
+          {
+            "id": 2,
+            "title": "Integrate Image Processor and Implement Face Cropping",
+            "description": "Modify the `createCapture` controller to call the new image processing service. Implement the cropping logic within the service using the face coordinates sent from the frontend.",
+            "dependencies": [
+              "20.1"
+            ],
+            "details": "In `backend/controllers/captureController.js`, import `processCapture`. Modify the `createCapture` function to call `processCapture`, passing it the temporary file path (`req.file.path`) and face coordinates from `req.body`. Inside `imageProcessor.js`, use `sharp(filePath).extract({ left, top, width, height })` to perform the crop. The function should return the sharp object for further chaining.",
+            "status": "done",
+            "testStrategy": "Send a test request with an image and mock face coordinates. Temporarily save the output of the crop operation to a file and verify it is cropped correctly. Ensure the controller correctly parses coordinates from the request body."
+          },
+          {
+            "id": 3,
+            "title": "Implement Background Removal with a Circular Mask",
+            "description": "Extend the Sharp processing chain in the `imageProcessor` service to remove the background by applying a circular mask to the cropped image.",
+            "dependencies": [
+              "20.2"
+            ],
+            "details": "In `imageProcessor.js`, after the `.extract()` call, create a circular SVG as a Buffer. Use the `composite` method with the `dest-in` blend mode to apply this mask to the cropped image, making the area outside the circle transparent. The formula for the SVG would be `<svg><circle cx=\"r\" cy=\"r\" r=\"r\"/></svg>` where 'r' is half the crop width.",
+            "status": "done",
+            "testStrategy": "Extend the test from the previous subtask. Inspect the image buffer or file generated by the processing chain. Verify that it is a cropped circle with a transparent background."
+          },
+          {
+            "id": 4,
+            "title": "Finalize Image as PNG and Save to `captures/`",
+            "description": "Complete the image processing by converting the buffer to a transparent PNG and saving it to the final destination with the correct naming convention.",
+            "dependencies": [
+              "20.3"
+            ],
+            "details": "In `imageProcessor.js`, add `.png()` to the Sharp chain to ensure the output format supports transparency. Generate a filename following the `smile_YYYYMMDD_HHMMSS.png` format. Use `.toFile(finalPath)` to save the processed image to the `captures/` directory. The `processCapture` function must return the full path of the newly created file.",
+            "status": "done",
+            "testStrategy": "Trigger the processing logic. Check the `captures/` directory for a new file. Verify its name matches the specified format (e.g., `smile_20240521_153000.png`) and that it is a valid PNG file with a transparent background."
+          },
+          {
+            "id": 5,
+            "title": "Update Controller, Save Final Path to DB, and Clean Up",
+            "description": "Modify the `createCapture` controller to use the final path returned by the image processor for the database record. After processing is complete, delete the original temporary file uploaded by Multer.",
+            "dependencies": [
+              "20.4"
+            ],
+            "details": "In `backend/controllers/captureController.js`, `await` the result from `processCapture`. Use the returned `finalPath` when calling `Capture.create`. After the database record is successfully created, use Node's `fs.promises.unlink` to delete the original temporary file located at `req.file.path`.",
+            "status": "done",
+            "testStrategy": "Perform a full end-to-end capture. 1. Verify the final processed PNG exists in `captures/`. 2. Check the `captures` table in the database to ensure the `image_path` column stores the path to the new PNG, not the temporary file. 3. Verify the temporary file in the `uploads/` (or equivalent) directory has been deleted."
+          }
+        ]
+      },
+      {
+        "id": 21,
+        "title": "Implement Automatic Capture on Sustained Smile",
+        "description": "On the frontend, implement the logic to trigger an automatic capture when a smile is detected continuously for more than 1 second.",
+        "details": "In the component that receives smile detection status from the Python backend, use state and timers (`setTimeout`/`setInterval`). When `smile_detected` becomes true, start a 1-second timer. If `smile_detected` becomes false before the timer completes, reset it. If the timer completes, trigger the same image capture and upload function used for the manual spacebar capture.",
+        "testStrategy": "Run all services. Position your face in the webcam and smile. Hold the smile. Verify that after approximately 1 second, the network request to upload the image is automatically triggered. Check the backend to confirm the image was processed and saved.",
+        "priority": "medium",
+        "dependencies": [
+          19,
+          20
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Add Ref for Smile Timer Management",
+            "description": "In the main component handling the webcam feed, introduce a `useRef` to hold the ID of the smile detection timer. This will allow the timer to be managed (created and cleared) across re-renders without triggering additional component updates.",
+            "dependencies": [],
+            "details": "In the React component that receives `smile_detected` status (likely `WebcamFeed.jsx` or `App.jsx`), import `useRef` from React. Initialize a ref, for example: `const smileTimerRef = useRef(null);`. This ref will be used to store the timer ID from `setTimeout`.",
+            "status": "pending",
+            "testStrategy": "Verify that the `useRef` is correctly initialized in the component and does not cause any console errors on application start."
+          },
+          {
+            "id": 2,
+            "title": "Create `useEffect` Hook for Smile Detection Logic",
+            "description": "Set up a `useEffect` hook that is sensitive to changes in the `smile_detected` status. This hook will serve as the entry point for all automatic capture logic.",
+            "dependencies": [
+              "21.1"
+            ],
+            "details": "Create a `useEffect` hook within the component. Add the state variable representing `smile_detected` (e.g., `detectionData.smile_detected`) to the dependency array. This ensures the effect's logic runs every time the smile status changes from true to false or vice-versa.",
+            "status": "pending",
+            "testStrategy": "Add a `console.log` inside the new `useEffect` to confirm it fires when you smile and stop smiling in front of the camera."
+          },
+          {
+            "id": 3,
+            "title": "Implement Timer Start Logic on Smile Detection",
+            "description": "Within the new `useEffect`, add the logic to start a 1-second timer when `smile_detected` becomes true. The timer's callback should trigger the existing image capture function.",
+            "dependencies": [
+              "21.2"
+            ],
+            "details": "Inside the `useEffect`, add a conditional check: `if (smile_detected)`. If true, start a timer: `smileTimerRef.current = setTimeout(() => { handleCapture(); }, 1000);`. Ensure `handleCapture` is the same function used by the spacebar manual capture (Task 19).",
+            "status": "pending",
+            "testStrategy": "Smile at the camera and hold it. Check the browser's network tab to see if the capture request is sent after approximately 1 second."
+          },
+          {
+            "id": 4,
+            "title": "Implement Timer Reset Logic When Smile is Lost",
+            "description": "Enhance the `useEffect` to cancel the timer if the `smile_detected` status becomes false before the 1-second timer completes.",
+            "dependencies": [
+              "21.3"
+            ],
+            "details": "In the `useEffect`, add an `else` block to the `if (smile_detected)` condition. Inside the `else` block, check if a timer is active (`if (smileTimerRef.current)`). If so, clear it using `clearTimeout(smileTimerRef.current)` and reset the ref: `smileTimerRef.current = null;`.",
+            "status": "pending",
+            "testStrategy": "Smile at the camera for less than a second, then stop smiling. Verify that no capture request is sent. Repeat this several times to ensure the timer is correctly reset."
+          },
+          {
+            "id": 5,
+            "title": "Add Effect Cleanup to Prevent Memory Leaks",
+            "description": "Implement a cleanup function within the smile detection `useEffect` to ensure that any active timer is cleared when the component unmounts.",
+            "dependencies": [
+              "21.2"
+            ],
+            "details": "Return a cleanup function from the `useEffect` hook. This function will be executed when the component unmounts. The function's body should be identical to the timer reset logic: `if (smileTimerRef.current) { clearTimeout(smileTimerRef.current); }`.",
+            "status": "pending",
+            "testStrategy": "This is a code quality check. Manually review the `useEffect` to ensure the cleanup function is present and correctly clears the timer referenced by `smileTimerRef`."
+          }
+        ]
+      },
+      {
+        "id": 22,
+        "title": "Develop API Endpoint to List Captured Images",
+        "description": "Create the `GET /api/captures` endpoint on the Node.js backend to retrieve a paginated list of all captured images from the SQLite database.",
+        "details": "The endpoint should query the `captures` table. Implement pagination using query parameters (e.g., `?page=1&limit=10`). The response should be a JSON object containing the list of captures for the page and pagination metadata (e.g., `totalItems`, `totalPages`, `currentPage`). Allow filtering by date as specified in the PRD.",
+        "testStrategy": "After capturing several images, make a GET request to `/api/captures`. Verify the response is a valid JSON with an array of capture objects. Test the pagination by sending requests with different `page` and `limit` query parameters and checking the results.",
+        "priority": "medium",
+        "dependencies": [
+          17
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Define Route and Controller Shell for Listing Captures",
+            "description": "Create the `GET /api/captures` route definition within the primary Express router file. Create a new, empty controller function `listCaptures` in the relevant controller file to handle the request.",
+            "dependencies": [],
+            "details": "Based on the existing structure for `POST /api/captures`, add a new route entry `router.get('/captures', captureController.listCaptures)`. In the `captureController.js` file, create and export an async function `listCaptures(req, res)` that initially sends a placeholder response.",
+            "status": "pending",
+            "testStrategy": "Start the server and make a GET request to `/api/captures`. Verify that the placeholder response is received with a 200 OK status."
+          },
+          {
+            "id": 2,
+            "title": "Implement Basic Database Query for All Captures",
+            "description": "In the `listCaptures` controller, implement the basic SQLite query to fetch all records from the `captures` table. For now, return the full, unpaginated list as a simple JSON array.",
+            "dependencies": [
+              "22.1"
+            ],
+            "details": "Use the existing database connection module to execute a `SELECT * FROM captures ORDER BY created_at DESC` query. Handle potential database errors and send the resulting rows as a JSON response.",
+            "status": "pending",
+            "testStrategy": "After ensuring some captures exist in the database, make a GET request to `/api/captures`. Verify the response is a JSON array containing all capture objects from the database."
+          },
+          {
+            "id": 3,
+            "title": "Add Pagination Logic to the Database Query",
+            "description": "Modify the `listCaptures` controller to handle `page` and `limit` query parameters. Implement the logic to calculate the `OFFSET` and apply `LIMIT` and `OFFSET` to the SQL query.",
+            "dependencies": [
+              "22.2"
+            ],
+            "details": "Parse `req.query.page` and `req.query.limit`, providing default values (e.g., page=1, limit=10). Calculate the offset as `(page - 1) * limit`. Update the SQL query to `SELECT * FROM captures ... LIMIT ? OFFSET ?` and pass the calculated values as parameters.",
+            "status": "pending",
+            "testStrategy": "Make requests to `/api/captures?page=1&limit=5` and `/api/captures?page=2&limit=5`. Verify that the first request returns the first 5 items and the second request returns the next 5 items."
+          },
+          {
+            "id": 4,
+            "title": "Implement Date Filtering Logic",
+            "description": "Enhance the `listCaptures` controller to filter captures by a date range. The queries for both data and total count must be updated to include the date filter.",
+            "dependencies": [
+              "22.2"
+            ],
+            "details": "Check for `startDate` and `endDate` in `req.query`. If present, dynamically add a `WHERE created_at BETWEEN ? AND ?` clause to the SQL query. Ensure the date parameters are correctly formatted for SQLite and passed securely to the query to prevent SQL injection.",
+            "status": "pending",
+            "testStrategy": "Create captures on different dates. Make a request with `startDate` and `endDate` query parameters (e.g., `/api/captures?startDate=YYYY-MM-DD`). Verify that only captures within that date range are returned."
+          },
+          {
+            "id": 5,
+            "title": "Calculate Totals and Format Final Paginated Response",
+            "description": "Execute a separate `COUNT(*)` query to get the total number of items matching the filter criteria. Use this total to calculate pagination metadata and structure the final JSON response as specified.",
+            "dependencies": [
+              "22.3",
+              "22.4"
+            ],
+            "details": "Run a `SELECT COUNT(*) as total FROM captures` query (including the `WHERE` clause from date filtering). Using the total count, the page, and the limit, calculate `totalPages`. Construct the final JSON response object: `{ data: [...], metadata: { totalItems, totalPages, currentPage } }`.",
+            "status": "pending",
+            "testStrategy": "Make a request like `/api/captures?page=1&limit=10`. Verify the response body has the correct structure, with the `data` array containing up to 10 items and the `metadata` object containing accurate `totalItems`, `totalPages`, and `currentPage` values."
+          }
+        ]
+      },
+      {
+        "id": 23,
+        "title": "Implement API Endpoints for Specific Capture (GET/DELETE)",
+        "description": "Create two endpoints: `GET /api/captures/:id` to retrieve a single capture's details and `DELETE /api/captures/:id` to delete a capture record and its corresponding file.",
+        "details": "For the GET endpoint, query the `captures` table by `id` and return the record as JSON or a 404 if not found. For the DELETE endpoint, first retrieve the record to get the `image_path`. Delete the file from the filesystem using Node's `fs` module. Then, delete the record from the database. Return a 204 No Content on success.",
+        "testStrategy": "1. Capture an image and note its ID. Make a GET request to `/api/captures/[ID]` and verify the correct data is returned. 2. Make a DELETE request to `/api/captures/[ID]`. Verify a 204 status is returned. 3. Check the filesystem to confirm the image file was deleted. 4. Query the database to confirm the record was removed.",
+        "priority": "low",
+        "dependencies": [
+          22
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create Route Handler for GET /api/captures/:id",
+            "description": "In `routes/captures.js`, create the basic structure for the `GET /api/captures/:id` endpoint. The handler should accept `req` and `res` objects and extract the `id` from `req.params`.",
+            "dependencies": [],
+            "details": "Modify `routes/captures.js` to add a new route using `router.get('/:id', async (req, res) => { ... });`. Inside the handler, destructure the `id` from `req.params` and add a basic try/catch block for error handling, similar to the existing `GET /` endpoint.",
+            "status": "pending",
+            "testStrategy": "Temporarily add `res.send(id)` inside the handler. Start the server and make a GET request to `/api/captures/123`. Verify that the response body is `123`."
+          },
+          {
+            "id": 2,
+            "title": "Implement Database Query for a Single Capture",
+            "description": "Within the `GET /api/captures/:id` handler, use the Knex.js instance to query the `captures` table for a single record matching the provided ID.",
+            "dependencies": [
+              "23.1"
+            ],
+            "details": "Inside the `try` block of the handler created in the previous subtask, use the `db` object to perform the query: `const capture = await db('captures').where({ id: id }).first();`. The `.first()` method is important to retrieve a single object instead of an array.",
+            "status": "pending",
+            "testStrategy": "Add `console.log(capture)` after the query. Make a GET request to an endpoint with a valid ID from your database. Check the server logs to see the correct capture object printed."
+          },
+          {
+            "id": 3,
+            "title": "Implement Response Logic for GET /api/captures/:id",
+            "description": "Add logic to the `GET /api/captures/:id` handler to check if a capture was found. If found, return the capture object as JSON with a 200 status. If not found, return a 404 status with an error message.",
+            "dependencies": [
+              "23.2"
+            ],
+            "details": "After the database query, add an `if (capture)` block. If true, call `res.json(capture)`. If false (the record is `undefined`), call `res.status(404).json({ error: 'Capture not found' });`. Ensure the existing `catch` block handles any database errors with a 500 status.",
+            "status": "pending",
+            "testStrategy": "1. Make a GET request to `/api/captures/[VALID_ID]`. Verify a 200 status and the correct JSON payload. 2. Make a GET request to `/api/captures/99999` (an invalid ID). Verify a 404 status and the JSON error message."
+          },
+          {
+            "id": 4,
+            "title": "Create DELETE Route and Implement File Deletion",
+            "description": "In `routes/captures.js`, create the `DELETE /api/captures/:id` endpoint. The handler should first query the database to find the capture's `image_path`, then use Node's `fs` module to delete the corresponding file from the filesystem.",
+            "dependencies": [],
+            "details": "Add `const fs = require('fs').promises;` and `const path = require('path');` to the top of `routes/captures.js`. Create a `router.delete('/:id', ...)` handler. Inside, fetch the capture record using `db('captures').where({ id }).first()`. If the record and `image_path` exist, construct the full file path and delete it using `await fs.unlink(filePath);`. Handle cases where the record is not found (return 404).",
+            "status": "pending",
+            "testStrategy": "Create a dummy file in the captures directory. Add a `console.log` to confirm the file path. Make a DELETE request for a record corresponding to that file. Verify the server log shows the correct path and that the file is removed from the directory."
+          },
+          {
+            "id": 5,
+            "title": "Implement Database Record Deletion and Finalize DELETE Response",
+            "description": "After successfully deleting the image file, delete the corresponding record from the `captures` table in the database. On success, respond with a 204 No Content status.",
+            "dependencies": [
+              "23.4"
+            ],
+            "details": "In the `DELETE /api/captures/:id` handler, after the `await fs.unlink()` call succeeds, add a Knex query to delete the database record: `await db('captures').where({ id: id }).del();`. After the deletion is successful, send the final response using `res.status(204).send();`.",
+            "status": "pending",
+            "testStrategy": "1. Capture a new image and note its ID. 2. Make a DELETE request to `/api/captures/[ID]`. Verify the response status is 204 and the response body is empty. 3. Query the database directly to confirm the record with that ID has been removed."
+          }
+        ]
+      },
+      {
+        "id": 24,
+        "title": "Integrate Slider for Smile Detection Sensitivity",
+        "description": "Implement the frontend slider component to adjust the smile detection sensitivity and pass this value to the Python backend.",
+        "details": "Using HeroUI/Tailwind, add a slider component to the UI (range 0.1 to 0.9). Manage its state in React. Modify the `POST /api/detect-smile` request to include the current slider value in its payload. The Python backend will need a minor adjustment to read this value and use it as the threshold for the combined score.",
+        "testStrategy": "Move the slider on the frontend and check the browser's network tab to confirm the value is being sent in the payload of requests to the Python backend. Set the sensitivity to a very high value (e.g., 0.9) and verify that it's much harder to trigger the smile detection (green border). Set it to a low value (e.g., 0.1) and verify it's very easy to trigger.",
+        "priority": "low",
+        "dependencies": [],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Add React State for Smile Detection Sensitivity",
+            "description": "In the main frontend component responsible for the webcam feed, introduce a new state variable using the `useState` hook to manage the smile detection sensitivity value.",
+            "dependencies": [],
+            "details": "Based on the codebase, the main component is likely `src/app/page.js`. Add a state variable `const [sensitivity, setSensitivity] = useState(0.5);`. This will serve as the single source of truth for the slider's value.",
+            "status": "pending",
+            "testStrategy": "Verify in React DevTools that the `sensitivity` state is initialized correctly and can be updated."
+          },
+          {
+            "id": 2,
+            "title": "Implement and Style the Sensitivity Slider UI",
+            "description": "Add a slider input element to the UI, allowing users to adjust the sensitivity. Style it using Tailwind CSS to match the project's aesthetic.",
+            "dependencies": [
+              "24.1"
+            ],
+            "details": "In the JSX of `src/app/page.js`, add an `<input type=\"range\">` element. Set its `min` to `0.1`, `max` to `0.9`, and `step` to `0.1`. Bind its `value` to the `sensitivity` state and its `onChange` event to call `setSensitivity` with the new value. Add a label and a visual display of the current value (e.g., `Sensitivity: 0.5`).",
+            "status": "pending",
+            "testStrategy": "Move the slider in the UI and confirm that the displayed value updates correctly and the `sensitivity` state changes in React DevTools."
+          },
+          {
+            "id": 3,
+            "title": "Modify `detect-smile` API Call to Include Sensitivity",
+            "description": "Update the frontend `fetch` request to `/api/detect-smile` to include the current sensitivity value in its payload.",
+            "dependencies": [
+              "24.1"
+            ],
+            "details": "Locate the function in `src/app/page.js` that sends the webcam frame to the backend. In the `FormData` object being prepared for the POST request, append the `sensitivity` state value using `formData.append('sensitivity', sensitivity);`.",
+            "status": "pending",
+            "testStrategy": "Use the browser's Network tab to inspect the payload of a `POST` request to `/api/detect-smile`. Verify that it contains a `sensitivity` field with the value set by the slider."
+          },
+          {
+            "id": 4,
+            "title": "Update Python Endpoint to Receive Sensitivity Value",
+            "description": "Modify the `/api/detect-smile` route in the Python backend to accept and parse the `sensitivity` value from the request's form data.",
+            "dependencies": [],
+            "details": "In the `api/index.py` file, locate the function handling the `/api/detect-smile` route. Modify it to read the `sensitivity` value from the request form (e.g., `sensitivity = float(request.form.get('sensitivity', 0.5))`). Use a default value to prevent errors if the value is not provided.",
+            "status": "pending",
+            "testStrategy": "Add a print statement or log in the Python endpoint to output the received sensitivity value. Trigger a request from the frontend and check the backend logs to confirm the value is received and correctly parsed as a float."
+          },
+          {
+            "id": 5,
+            "title": "Integrate Sensitivity Threshold in Smile Detection Logic",
+            "description": "Use the received sensitivity value as the dynamic threshold for the combined score in the backend's smile detection algorithm.",
+            "dependencies": [
+              "24.4"
+            ],
+            "details": "In `api/index.py`, find the line where the smile score is compared against a hardcoded threshold (e.g., `if combined_score > 0.5:`). Replace the hardcoded value with the `sensitivity` variable received from the request.",
+            "status": "pending",
+            "testStrategy": "Set the sensitivity slider to a very high value (e.g., 0.9) on the frontend and confirm it's difficult to trigger a smile detection. Then, set it to a very low value (e.g., 0.1) and confirm detection is triggered very easily."
+          }
+        ]
+      }
+    ],
+    "metadata": {
+      "created": "2025-09-23T22:32:30.340Z",
+      "updated": "2025-09-24T01:32:19.415Z",
+      "description": "Tasks for master context"
+    }
+  }
+}
