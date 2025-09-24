@@ -281,4 +281,13 @@ def detect_smile_api():
     return jsonify(detection_result)
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    import sys
+    port = 5001  # Default port
+    if len(sys.argv) > 1 and '--port' in sys.argv:
+        try:
+            port_index = sys.argv.index('--port')
+            if port_index + 1 < len(sys.argv):
+                port = int(sys.argv[port_index + 1])
+        except (ValueError, IndexError):
+            pass
+    app.run(host='0.0.0.0', port=port, debug=True)

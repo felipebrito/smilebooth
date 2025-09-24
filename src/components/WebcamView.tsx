@@ -1,9 +1,10 @@
 import { useRef, useEffect, useState, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useFaceDetection } from '../hooks/usePythonSmileDetection'
 import FaceOverlay from './FaceOverlay'
-import Gallery from './Gallery'
 
 const WebcamView = () => {
+  const navigate = useNavigate()
   const videoRef = useRef<HTMLVideoElement>(null)
   const captureCanvasRef = useRef<HTMLCanvasElement>(null)
   const [isStreaming, setIsStreaming] = useState(false)
@@ -12,7 +13,6 @@ const WebcamView = () => {
   const [isCapturing, setIsCapturing] = useState(false)
   const [lastCapture, setLastCapture] = useState<string | null>(null)
   const [capturedImages, setCapturedImages] = useState<any[]>([])
-  const [showGallery, setShowGallery] = useState(false)
   const [lastCaptureTime, setLastCaptureTime] = useState(0)
   const [timeUntilNextCapture, setTimeUntilNextCapture] = useState(0)
 
@@ -375,14 +375,17 @@ const WebcamView = () => {
           <code className="text-blue-600">GET /captures/&#123;filename&#125;</code> - View image
         </div>
         
-        <div className="flex justify-center">
-          <button
-            onClick={() => setShowGallery(!showGallery)}
-            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-          >
-            {showGallery ? 'Hide Gallery' : 'Show Gallery'} ({capturedImages.length})
-          </button>
-        </div>
+          <div className="flex justify-center">
+            <button
+              onClick={() => navigate('/gallery')}
+              className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors flex items-center gap-2"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              Ver Galeria ({capturedImages.length})
+            </button>
+          </div>
         
         <div className="flex items-center gap-2">
           <label className="text-sm text-gray-600 w-24">Smile threshold:</label>
@@ -399,36 +402,6 @@ const WebcamView = () => {
         </div>
       </div>
       
-        {/* Gallery */}
-        {showGallery && (
-          <div className="mt-4 border-t pt-4">
-            <Gallery 
-              images={capturedImages} 
-              onRefresh={() => {
-                // Reload captures from backend
-                const loadCaptures = async () => {
-                  try {
-                    const response = await fetch('http://localhost:3002/api/captures?limit=50');
-                    if (response.ok) {
-                      const result = await response.json();
-                      const images = result.data.map((capture: any) => ({
-                        id: capture.id,
-                        filename: capture.original_path,
-                        timestamp: capture.timestamp,
-                        faceProcessed: capture.face_coordinates ? true : false,
-                        imageUrl: `http://localhost:3002/captures/${capture.original_path}`
-                      }));
-                      setCapturedImages(images);
-                    }
-                  } catch (error) {
-                    console.error('Error loading captures:', error);
-                  }
-                };
-                loadCaptures();
-              }}
-            />
-          </div>
-        )}
     </div>
   )
 }

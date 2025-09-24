@@ -32,8 +32,8 @@ export const useFaceDetection = (videoRef: RefObject<HTMLVideoElement>): UseFace
       try {
         console.log('🐍 Inicializando detecção Python...');
         
-        // Testar conexão com servidor Python
-        const response = await fetch('http://localhost:5000/api/health');
+          // Testar conexão com servidor Python
+          const response = await fetch('http://localhost:5001/api/health');
         if (!response.ok) {
           throw new Error('Servidor Python não está respondendo');
         }
@@ -73,8 +73,8 @@ export const useFaceDetection = (videoRef: RefObject<HTMLVideoElement>): UseFace
         // Converter para base64
         const imageData = canvas.toDataURL('image/jpeg', 0.8);
 
-        // Enviar para servidor Python
-        const response = await fetch('http://localhost:5000/api/detect-smile', {
+          // Enviar para servidor Python
+          const response = await fetch('http://localhost:5001/api/detect-smile', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
