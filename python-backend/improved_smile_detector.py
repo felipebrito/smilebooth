@@ -275,7 +275,7 @@ def detect_smile_api():
     if img is None:
         return jsonify({"error": "Could not decode image"}), 400
 
-      threshold = data.get('threshold', 0.5) # Default threshold
+    threshold = data.get('threshold', 0.5) # Default threshold
     
     detection_result = detector.detect_smile(img, threshold)
     return jsonify(detection_result)

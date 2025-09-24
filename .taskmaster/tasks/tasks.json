@@ -143,7 +143,7 @@
         "dependencies": [
           18
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -151,7 +151,7 @@
             "description": "In the `frontend/src/components/CameraFeed/CameraFeed.jsx` component, implement a `useEffect` hook to add and clean up a global `keydown` event listener on the `window` object. This listener will trigger a handler function when the 'Space' key is pressed.",
             "dependencies": [],
             "details": "Create a new `useEffect` hook. Inside it, define a function `handleKeyDown(event)` that checks `if (event.code === 'Space')`. Add this function as an event listener for 'keydown' on the `window` object. The hook's cleanup function must remove this event listener to prevent memory leaks.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Run the frontend application. Open the browser console. Press the spacebar and verify that a log message from the `handleKeyDown` function appears. Press other keys and verify nothing is logged."
           },
           {
@@ -162,7 +162,7 @@
               "19.1"
             ],
             "details": "Add `const captureCanvasRef = useRef(null);` and include `<canvas ref={captureCanvasRef} style={{ display: 'none' }} />` in the component's JSX. Create an `async` function named `handleCapture`. Modify the `handleKeyDown` function to call `handleCapture()` and prevent the default spacebar action (`event.preventDefault()`).",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "With the console open, press the spacebar. Verify that any default browser behavior (like scrolling) is prevented and that a log message from within the `handleCapture` function is displayed."
           },
           {
@@ -173,7 +173,7 @@
               "19.2"
             ],
             "details": "Access the video and canvas elements via their refs. Set the canvas dimensions to match the video's intrinsic dimensions (`videoRef.current.videoWidth` and `videoRef.current.videoHeight`). Get the 2D rendering context of the canvas and use `ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height)` to perform the capture.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "This is a non-visual step. The primary verification will be in the next subtask. For immediate testing, you could temporarily make the canvas visible to confirm the image is drawn correctly when the spacebar is pressed."
           },
           {
@@ -184,7 +184,7 @@
               "19.3"
             ],
             "details": "Use the `canvas.toBlob()` method to get an image blob. Since `toBlob` is callback-based, wrap it in a `Promise` for easier use with `async/await`. Once you have the blob, create a `File` object from it, e.g., `new File([blob], 'capture.jpg', { type: 'image/jpeg' })`. Log the resulting file object to the console to verify its creation.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Press the spacebar. Check the browser console to confirm that a `File` object is created and logged, showing properties like name, size, and type."
           },
           {
@@ -195,7 +195,7 @@
               "19.4"
             ],
             "details": "Create a `FormData` object. Append the `File` object to it using `formData.append('image', file)`. Use the `fetch` API to send a `POST` request to `/api/captures` with the `formData` as the body. Do not set the `Content-Type` header manually; the browser will set it correctly for `FormData`. Add basic logging for success or failure of the request.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Run both frontend and backend. Press the spacebar. Open the browser's Network tab and verify a POST request is sent to `/api/captures` with a multipart/form-data payload. Check the backend server logs and the `captures/` directory to confirm the file was received and saved."
           }
         ]
@@ -534,7 +534,7 @@
     ],
     "metadata": {
       "created": "2025-09-23T22:32:30.340Z",
-      "updated": "2025-09-24T01:32:19.415Z",
+      "updated": "2025-09-24T02:02:54.011Z",
       "description": "Tasks for master context"
     }
   }
