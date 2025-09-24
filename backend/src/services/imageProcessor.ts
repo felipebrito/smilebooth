@@ -58,8 +58,8 @@ export async function processCapture(filePath: string, faceData: FaceData): Prom
     console.log('Image dimensions:', { width: imageWidth, height: imageHeight });
     console.log('Face coordinates:', faceData);
     
-      // Create consistent square crop (like the reference image)
-      const cropSize = Math.max(faceData.width, faceData.height) * 1.2; // 20% padding around face
+      // Create tighter crop focused on the person (like the reference image)
+      const cropSize = Math.max(faceData.width, faceData.height) * 1.1; // 10% padding for tighter crop
       const centerX = faceData.x + faceData.width / 2;
       const centerY = faceData.y + faceData.height / 2;
       
@@ -68,7 +68,7 @@ export async function processCapture(filePath: string, faceData: FaceData): Prom
       const cropY = Math.max(0, centerY - cropSize / 2);
       const finalCropSize = Math.min(cropSize, Math.min(imageWidth - cropX, imageHeight - cropY));
       
-      console.log('Consistent square crop:', { cropX, cropY, finalCropSize });
+      console.log('Tighter person crop:', { cropX, cropY, finalCropSize });
       
       // Validate that we have valid dimensions
       if (finalCropSize <= 0) {
@@ -87,23 +87,32 @@ export async function processCapture(filePath: string, faceData: FaceData): Prom
         .png()
         .toBuffer();
 
-      // Create circular mask for background removal
-      const radius = 200; // Half of 400x400
+      // Create elliptical mask that better fits a face (wider than tall)
       const maskSvg = `
         <svg width="400" height="400">
-          <circle cx="200" cy="200" r="200" fill="white"/>
+          <ellipse cx="200" cy="200" rx="180" ry="160" fill="white"/>
         </svg>
       `;
 
       const maskBuffer = Buffer.from(maskSvg);
 
-      // Apply circular mask to remove background
-      await sharp(croppedImage)
+      // Apply elliptical mask to remove background (more precise than circular)
+      const finalImage = await sharp(croppedImage)
         .composite([{
           input: maskBuffer,
           blend: 'dest-in'
         }])
         .png()
+        .toBuffer();
+
+      // Additional processing to ensure clean background removal
+      await sharp(finalImage)
+        .png({
+          quality: 100,
+          compressionLevel: 0,
+          adaptiveFiltering: false,
+          force: true
+        })
         .toFile(outputPath);
 
     console.log('Face cropping completed:', outputPath);

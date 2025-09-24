@@ -261,9 +261,11 @@
     position: absolute;
     left: 50%;
     top: 50%;
-    transform: translate(-50%, -50%) scale(1);
+    transform: translate(-50%, -50%) scale(1.1); /* Slightly larger to fill better */
     object-fit: cover;
+    object-position: center top; /* Focus on the person's face */
     opacity: calc(1.75 - var(--pointer-from-center));
+    border-radius: 50%; /* Ensure circular display */
   }
 
 .pc-avatar-content::before {

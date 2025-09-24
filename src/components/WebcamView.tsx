@@ -42,8 +42,8 @@ const WebcamView = () => {
     
     console.log('👤 Face coordinates:', { faceX, faceY, faceWidth, faceHeight })
     
-    // Create consistent square crop (like the reference image)
-    const cropSize = Math.max(faceWidth, faceHeight) * 1.2 // 20% padding around face
+    // Create tighter crop focused on the person (like the reference image)
+    const cropSize = Math.max(faceWidth, faceHeight) * 1.1 // 10% padding for tighter crop
     const centerX = faceX + faceWidth / 2
     const centerY = faceY + faceHeight / 2
     
@@ -55,16 +55,20 @@ const WebcamView = () => {
     processedCanvas.width = cropSize
     processedCanvas.height = cropSize
     
-    // Create circular mask for consistent circular crop
+    // Create more precise circular mask that follows the face shape
     processedCtx.save()
     processedCtx.beginPath()
     const maskCenterX = cropSize / 2
     const maskCenterY = cropSize / 2
-    const maskRadius = cropSize / 2
-    processedCtx.arc(maskCenterX, maskCenterY, maskRadius, 0, 2 * Math.PI)
+    
+    // Create elliptical mask that better fits a face (wider than tall)
+    const maskRadiusX = cropSize * 0.45 // 45% of width for horizontal radius
+    const maskRadiusY = cropSize * 0.4  // 40% of height for vertical radius
+    
+    processedCtx.ellipse(maskCenterX, maskCenterY, maskRadiusX, maskRadiusY, 0, 0, 2 * Math.PI)
     processedCtx.clip()
     
-    // Draw the cropped face region with circular clipping
+    // Draw the cropped face region with elliptical clipping
     processedCtx.drawImage(
       canvas,
       cropX, cropY, cropSize, cropSize, // Source rectangle (square crop)
@@ -117,16 +121,16 @@ const WebcamView = () => {
       processedCanvas = await processImageWithBackgroundRemoval(canvas, detections[0], video)
     }
     
-    // Convert processed canvas to blob
-    const blob = await new Promise<Blob>((resolve, reject) => {
-      processedCanvas.toBlob((blob) => {
-        if (blob) {
-          resolve(blob)
-        } else {
-          reject(new Error('Failed to create blob from canvas'))
-        }
-      }, 'image/png', 1.0) // PNG for transparency
-    })
+      // Convert processed canvas to blob with high quality
+      const blob = await new Promise<Blob>((resolve, reject) => {
+        processedCanvas.toBlob((blob) => {
+          if (blob) {
+            resolve(blob)
+          } else {
+            reject(new Error('Failed to create blob from canvas'))
+          }
+        }, 'image/png', 1.0) // PNG for transparency with maximum quality
+      })
     
     // Create File object
     const file = new File([blob], `smile_${Date.now()}.png`, { type: 'image/png' })
