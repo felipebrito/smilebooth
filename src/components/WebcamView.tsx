@@ -17,66 +17,6 @@ const WebcamView = () => {
 
   const { detections, error: detectionError, isSmiling, smileThreshold, setSmileThreshold } = useFaceDetection(videoRef)
 
-  // Update countdown timer
-  useEffect(() => {
-    if (lastCaptureTime > 0) {
-      const interval = setInterval(() => {
-        const timeLeft = Math.max(0, Math.ceil((3000 - (Date.now() - lastCaptureTime)) / 1000))
-        setTimeUntilNextCapture(timeLeft)
-        
-        // Clear interval when countdown reaches 0
-        if (timeLeft === 0) {
-          clearInterval(interval)
-        }
-      }, 100)
-      
-      return () => clearInterval(interval)
-    } else {
-      setTimeUntilNextCapture(0)
-    }
-  }, [lastCaptureTime])
-
-  // Load existing captures on component mount
-  useEffect(() => {
-    const loadCaptures = async () => {
-      try {
-        const response = await fetch('http://localhost:3002/api/captures?limit=50');
-        if (response.ok) {
-          const result = await response.json();
-          const images = result.data.map((capture: any) => ({
-            id: capture.id,
-            filename: capture.original_path,
-            timestamp: capture.timestamp,
-            faceProcessed: capture.face_coordinates ? true : false,
-            imageUrl: `http://localhost:3002/captures/${capture.original_path}`
-          }));
-          setCapturedImages(images);
-        }
-      } catch (error) {
-        console.error('Error loading captures:', error);
-      }
-    };
-    
-    loadCaptures();
-  }, []);
-
-  // Auto-capture when smiling (with debounce)
-  useEffect(() => {
-    if (isSmiling && !isCapturing) {
-      const now = Date.now()
-      const timeSinceLastCapture = now - lastCaptureTime
-      
-      // Only capture if at least 3 seconds have passed since last capture
-      if (timeSinceLastCapture > 3000) {
-        console.log('😊 Smile detected! Auto-capturing...')
-        setLastCaptureTime(now)
-        handleCapture()
-      } else {
-        console.log('😊 Smile detected but too soon since last capture, skipping...')
-      }
-    }
-  }, [isSmiling, isCapturing, lastCaptureTime, handleCapture])
-
   // Capture function
   const handleCapture = useCallback(async () => {
     console.log('Starting capture process...')
@@ -165,6 +105,66 @@ const WebcamView = () => {
       setIsCapturing(false)
     }
   }, [detections])
+
+  // Update countdown timer
+  useEffect(() => {
+    if (lastCaptureTime > 0) {
+      const interval = setInterval(() => {
+        const timeLeft = Math.max(0, Math.ceil((3000 - (Date.now() - lastCaptureTime)) / 1000))
+        setTimeUntilNextCapture(timeLeft)
+        
+        // Clear interval when countdown reaches 0
+        if (timeLeft === 0) {
+          clearInterval(interval)
+        }
+      }, 100)
+      
+      return () => clearInterval(interval)
+    } else {
+      setTimeUntilNextCapture(0)
+    }
+  }, [lastCaptureTime])
+
+  // Load existing captures on component mount
+  useEffect(() => {
+    const loadCaptures = async () => {
+      try {
+        const response = await fetch('http://localhost:3002/api/captures?limit=50');
+        if (response.ok) {
+          const result = await response.json();
+          const images = result.data.map((capture: any) => ({
+            id: capture.id,
+            filename: capture.original_path,
+            timestamp: capture.timestamp,
+            faceProcessed: capture.face_coordinates ? true : false,
+            imageUrl: `http://localhost:3002/captures/${capture.original_path}`
+          }));
+          setCapturedImages(images);
+        }
+      } catch (error) {
+        console.error('Error loading captures:', error);
+      }
+    };
+    
+    loadCaptures();
+  }, []);
+
+  // Auto-capture when smiling (with debounce)
+  useEffect(() => {
+    if (isSmiling && !isCapturing) {
+      const now = Date.now()
+      const timeSinceLastCapture = now - lastCaptureTime
+      
+      // Only capture if at least 3 seconds have passed since last capture
+      if (timeSinceLastCapture > 3000) {
+        console.log('😊 Smile detected! Auto-capturing...')
+        setLastCaptureTime(now)
+        handleCapture()
+      } else {
+        console.log('😊 Smile detected but too soon since last capture, skipping...')
+      }
+    }
+  }, [isSmiling, isCapturing, lastCaptureTime, handleCapture])
 
   // Handle spacebar capture
   useEffect(() => {
@@ -309,7 +309,7 @@ const WebcamView = () => {
           <span className="font-medium">🔗 API Endpoints:</span><br/>
           <code className="text-blue-600">GET /api/captures</code> - List images<br/>
           <code className="text-blue-600">POST /api/captures</code> - Upload image<br/>
-          <code className="text-blue-600">GET /captures/{filename}</code> - View image
+          <code className="text-blue-600">GET /captures/&#123;filename&#125;</code> - View image
         </div>
         
         <div className="flex justify-center">
