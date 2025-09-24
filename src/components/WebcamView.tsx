@@ -12,8 +12,22 @@ const WebcamView = () => {
   const [lastCapture, setLastCapture] = useState<string | null>(null)
   const [capturedImages, setCapturedImages] = useState<any[]>([])
   const [showGallery, setShowGallery] = useState(false)
+  const [lastCaptureTime, setLastCaptureTime] = useState(0)
+  const [timeUntilNextCapture, setTimeUntilNextCapture] = useState(0)
 
   const { detections, error: detectionError, isSmiling, smileThreshold, setSmileThreshold } = useFaceDetection(videoRef)
+
+  // Update countdown timer
+  useEffect(() => {
+    if (lastCaptureTime > 0) {
+      const interval = setInterval(() => {
+        const timeLeft = Math.max(0, Math.ceil((3000 - (Date.now() - lastCaptureTime)) / 1000))
+        setTimeUntilNextCapture(timeLeft)
+      }, 100)
+      
+      return () => clearInterval(interval)
+    }
+  }, [lastCaptureTime])
 
   // Load existing captures on component mount
   useEffect(() => {
@@ -39,13 +53,22 @@ const WebcamView = () => {
     loadCaptures();
   }, []);
 
-  // Auto-capture when smiling
+  // Auto-capture when smiling (with debounce)
   useEffect(() => {
     if (isSmiling && !isCapturing) {
-      console.log('😊 Smile detected! Auto-capturing...')
-      handleCapture()
+      const now = Date.now()
+      const timeSinceLastCapture = now - lastCaptureTime
+      
+      // Only capture if at least 3 seconds have passed since last capture
+      if (timeSinceLastCapture > 3000) {
+        console.log('😊 Smile detected! Auto-capturing...')
+        setLastCaptureTime(now)
+        handleCapture()
+      } else {
+        console.log('😊 Smile detected but too soon since last capture, skipping...')
+      }
     }
-  }, [isSmiling, isCapturing])
+  }, [isSmiling, isCapturing, lastCaptureTime])
 
   // Capture function
   const handleCapture = async () => {
@@ -268,6 +291,11 @@ const WebcamView = () => {
         
         <div className="text-center text-sm text-gray-500 bg-gray-50 p-2 rounded">
           <span className="font-medium">💡 Tip:</span> Press <kbd className="px-1 py-0.5 bg-gray-200 rounded text-xs">Space</kbd> to capture a photo
+          {lastCaptureTime > 0 && timeUntilNextCapture > 0 && (
+            <div className="mt-1 text-xs text-blue-600">
+              Next auto-capture in: {timeUntilNextCapture}s
+            </div>
+          )}
         </div>
         
         <div className="text-center text-xs text-gray-400 bg-blue-50 p-2 rounded">
