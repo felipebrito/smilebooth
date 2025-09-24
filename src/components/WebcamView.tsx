@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from 'react'
+import { useRef, useEffect, useState, useCallback } from 'react'
 import { useFaceDetection } from '../hooks/usePythonSmileDetection'
 import FaceOverlay from './FaceOverlay'
 
@@ -23,9 +23,16 @@ const WebcamView = () => {
       const interval = setInterval(() => {
         const timeLeft = Math.max(0, Math.ceil((3000 - (Date.now() - lastCaptureTime)) / 1000))
         setTimeUntilNextCapture(timeLeft)
+        
+        // Clear interval when countdown reaches 0
+        if (timeLeft === 0) {
+          clearInterval(interval)
+        }
       }, 100)
       
       return () => clearInterval(interval)
+    } else {
+      setTimeUntilNextCapture(0)
     }
   }, [lastCaptureTime])
 
@@ -68,10 +75,10 @@ const WebcamView = () => {
         console.log('😊 Smile detected but too soon since last capture, skipping...')
       }
     }
-  }, [isSmiling, isCapturing, lastCaptureTime])
+  }, [isSmiling, isCapturing, lastCaptureTime, handleCapture])
 
   // Capture function
-  const handleCapture = async () => {
+  const handleCapture = useCallback(async () => {
     console.log('Starting capture process...')
     setIsCapturing(true)
     
@@ -157,7 +164,7 @@ const WebcamView = () => {
     } finally {
       setIsCapturing(false)
     }
-  }
+  }, [detections])
 
   // Handle spacebar capture
   useEffect(() => {
@@ -293,7 +300,7 @@ const WebcamView = () => {
           <span className="font-medium">💡 Tip:</span> Press <kbd className="px-1 py-0.5 bg-gray-200 rounded text-xs">Space</kbd> to capture a photo
           {lastCaptureTime > 0 && timeUntilNextCapture > 0 && (
             <div className="mt-1 text-xs text-blue-600">
-              Next auto-capture in: {timeUntilNextCapture}s
+              Next auto-capture in: {Math.max(0, timeUntilNextCapture)}s
             </div>
           )}
         </div>
