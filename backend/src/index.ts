@@ -115,6 +115,7 @@ app.post('/api/captures', upload.single('image'), async (req, res) => {
 
       // Check if image is already processed (PNG with transparency)
       let processedImagePath = req.file.filename;
+      let faceData: FaceData | null = null;
       const isAlreadyProcessed = req.file.mimetype === 'image/png';
       
       if (isAlreadyProcessed) {
@@ -134,7 +135,6 @@ app.post('/api/captures', upload.single('image'), async (req, res) => {
         console.log('📁 Moved processed image to captures directory:', newFilename);
       } else {
         // Process image if it's not already processed
-        let faceData: FaceData | null = null;
         if (req.body.faceCoordinates) {
           try {
             faceData = JSON.parse(req.body.faceCoordinates);

@@ -1,6 +1,7 @@
 import { useRef, useEffect, useState, useCallback } from 'react'
 import { useFaceDetection } from '../hooks/usePythonSmileDetection'
 import FaceOverlay from './FaceOverlay'
+import Gallery from './Gallery'
 
 const WebcamView = () => {
   const videoRef = useRef<HTMLVideoElement>(null)
@@ -398,47 +399,36 @@ const WebcamView = () => {
         </div>
       </div>
       
-      {/* Gallery */}
-      {showGallery && (
-        <div className="mt-4 border-t pt-4">
-          <h3 className="text-lg font-semibold text-gray-700 mb-4 text-center">
-            Your captured smiles will appear here
-          </h3>
-          
-          {capturedImages.length === 0 ? (
-            <div className="text-center text-gray-500 py-8">
-              <div className="text-4xl mb-2">📸</div>
-              <p>No images captured yet. Smile or press space to capture!</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {capturedImages.map((image) => (
-                <div key={image.id} className="relative group">
-                  <img
-                    src={image.imageUrl}
-                    alt={`Capture ${image.id}`}
-                    className="w-full h-32 object-cover rounded-lg shadow-md"
-                    onError={(e) => {
-                      console.error('Error loading image:', image.imageUrl)
-                      e.currentTarget.style.display = 'none'
-                    }}
-                  />
-                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 rounded-lg flex items-center justify-center">
-                    <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-white text-center">
-                      <div className="text-xs">
-                        {new Date(image.timestamp).toLocaleString()}
-                      </div>
-                      <div className="text-xs mt-1">
-                        {image.faceProcessed ? '✅ Processed' : '⏳ Processing'}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+        {/* Gallery */}
+        {showGallery && (
+          <div className="mt-4 border-t pt-4">
+            <Gallery 
+              images={capturedImages} 
+              onRefresh={() => {
+                // Reload captures from backend
+                const loadCaptures = async () => {
+                  try {
+                    const response = await fetch('http://localhost:3002/api/captures?limit=50');
+                    if (response.ok) {
+                      const result = await response.json();
+                      const images = result.data.map((capture: any) => ({
+                        id: capture.id,
+                        filename: capture.original_path,
+                        timestamp: capture.timestamp,
+                        faceProcessed: capture.face_coordinates ? true : false,
+                        imageUrl: `http://localhost:3002/captures/${capture.original_path}`
+                      }));
+                      setCapturedImages(images);
+                    }
+                  } catch (error) {
+                    console.error('Error loading captures:', error);
+                  }
+                };
+                loadCaptures();
+              }}
+            />
+          </div>
+        )}
     </div>
   )
 }
