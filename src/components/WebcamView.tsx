@@ -18,7 +18,7 @@ const WebcamView = () => {
 
   const { detections, error: detectionError, isSmiling, smileThreshold, setSmileThreshold } = useFaceDetection(videoRef)
 
-  // Process image with background removal
+  // Process image with background removal and consistent cropping
   const processImageWithBackgroundRemoval = async (
     canvas: HTMLCanvasElement, 
     detection: any, 
@@ -42,29 +42,38 @@ const WebcamView = () => {
     
     console.log('👤 Face coordinates:', { faceX, faceY, faceWidth, faceHeight })
     
-    // Set processed canvas size to face dimensions
-    processedCanvas.width = faceWidth
-    processedCanvas.height = faceHeight
+    // Create consistent square crop (like the reference image)
+    const cropSize = Math.max(faceWidth, faceHeight) * 1.2 // 20% padding around face
+    const centerX = faceX + faceWidth / 2
+    const centerY = faceY + faceHeight / 2
     
-    // Create circular mask
+    // Calculate crop area centered on face
+    const cropX = centerX - cropSize / 2
+    const cropY = centerY - cropSize / 2
+    
+    // Set processed canvas to square dimensions
+    processedCanvas.width = cropSize
+    processedCanvas.height = cropSize
+    
+    // Create circular mask for consistent circular crop
     processedCtx.save()
     processedCtx.beginPath()
-    const centerX = faceWidth / 2
-    const centerY = faceHeight / 2
-    const radius = Math.min(faceWidth, faceHeight) / 2
-    processedCtx.arc(centerX, centerY, radius, 0, 2 * Math.PI)
+    const maskCenterX = cropSize / 2
+    const maskCenterY = cropSize / 2
+    const maskRadius = cropSize / 2
+    processedCtx.arc(maskCenterX, maskCenterY, maskRadius, 0, 2 * Math.PI)
     processedCtx.clip()
     
-    // Draw the face region with circular clipping
+    // Draw the cropped face region with circular clipping
     processedCtx.drawImage(
       canvas,
-      faceX, faceY, faceWidth, faceHeight, // Source rectangle
-      0, 0, faceWidth, faceHeight // Destination rectangle
+      cropX, cropY, cropSize, cropSize, // Source rectangle (square crop)
+      0, 0, cropSize, cropSize // Destination rectangle (square output)
     )
     
     processedCtx.restore()
     
-    console.log('✅ Background removal completed')
+    console.log('✅ Background removal completed with consistent square crop')
     return processedCanvas
   }
 

@@ -58,48 +58,53 @@ export async function processCapture(filePath: string, faceData: FaceData): Prom
     console.log('Image dimensions:', { width: imageWidth, height: imageHeight });
     console.log('Face coordinates:', faceData);
     
-    // Validate and adjust coordinates to fit within image bounds
-    const left = Math.max(0, Math.min(Math.round(faceData.x), imageWidth - 1));
-    const top = Math.max(0, Math.min(Math.round(faceData.y), imageHeight - 1));
-    const width = Math.min(Math.round(faceData.width), imageWidth - left);
-    const height = Math.min(Math.round(faceData.height), imageHeight - top);
-    
-    console.log('Adjusted coordinates:', { left, top, width, height });
-    
-    // Validate that we have valid dimensions
-    if (width <= 0 || height <= 0) {
-      throw new Error(`Invalid crop dimensions: width=${width}, height=${height}`);
-    }
+      // Create consistent square crop (like the reference image)
+      const cropSize = Math.max(faceData.width, faceData.height) * 1.2; // 20% padding around face
+      const centerX = faceData.x + faceData.width / 2;
+      const centerY = faceData.y + faceData.height / 2;
+      
+      // Calculate crop area centered on face
+      const cropX = Math.max(0, centerX - cropSize / 2);
+      const cropY = Math.max(0, centerY - cropSize / 2);
+      const finalCropSize = Math.min(cropSize, Math.min(imageWidth - cropX, imageHeight - cropY));
+      
+      console.log('Consistent square crop:', { cropX, cropY, finalCropSize });
+      
+      // Validate that we have valid dimensions
+      if (finalCropSize <= 0) {
+        throw new Error(`Invalid crop dimensions: size=${finalCropSize}`);
+      }
 
-    // Perform face cropping using Sharp
-    const croppedImage = await sharp(filePath)
-      .extract({
-        left,
-        top,
-        width,
-        height
-      })
-      .png()
-      .toBuffer();
+      // Perform square face cropping using Sharp
+      const croppedImage = await sharp(filePath)
+        .extract({
+          left: Math.round(cropX),
+          top: Math.round(cropY),
+          width: Math.round(finalCropSize),
+          height: Math.round(finalCropSize)
+        })
+        .resize(400, 400) // Standardize to 400x400 square
+        .png()
+        .toBuffer();
 
-    // Create circular mask for background removal
-    const radius = Math.round(width / 2);
-    const maskSvg = `
-      <svg width="${width}" height="${height}">
-        <circle cx="${radius}" cy="${radius}" r="${radius}" fill="white"/>
-      </svg>
-    `;
+      // Create circular mask for background removal
+      const radius = 200; // Half of 400x400
+      const maskSvg = `
+        <svg width="400" height="400">
+          <circle cx="200" cy="200" r="200" fill="white"/>
+        </svg>
+      `;
 
-    const maskBuffer = Buffer.from(maskSvg);
+      const maskBuffer = Buffer.from(maskSvg);
 
-    // Apply circular mask to remove background
-    await sharp(croppedImage)
-      .composite([{
-        input: maskBuffer,
-        blend: 'dest-in'
-      }])
-      .png()
-      .toFile(outputPath);
+      // Apply circular mask to remove background
+      await sharp(croppedImage)
+        .composite([{
+          input: maskBuffer,
+          blend: 'dest-in'
+        }])
+        .png()
+        .toFile(outputPath);
 
     console.log('Face cropping completed:', outputPath);
     

@@ -227,7 +227,7 @@ const GalleryPage: React.FC = () => {
                       enableTilt={true}
                       enableMobileTilt={false}
                       onContactClick={() => handleContactClick(selectedProfile)}
-                      className="w-full max-w-md"
+                      className="w-full max-w-sm"
                     />
                   </div>
                 )}
