@@ -27,9 +27,71 @@ const upload = multer({ storage: storage });
 app.use(cors());
 app.use(express.json());
 
+// Serve static files from captures directory
+app.use('/captures', express.static(path.join(__dirname, '../captures')));
+
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'ok' });
+});
+
+// List captures endpoint
+app.get('/api/captures', async (req, res) => {
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const startDate = req.query.startDate as string;
+    const endDate = req.query.endDate as string;
+    
+    const offset = (page - 1) * limit;
+    
+    // Build WHERE clause for date filtering
+    let whereClause = '';
+    let params: any[] = [];
+    
+    if (startDate && endDate) {
+      whereClause = 'WHERE timestamp BETWEEN ? AND ?';
+      params = [startDate, endDate];
+    } else if (startDate) {
+      whereClause = 'WHERE timestamp >= ?';
+      params = [startDate];
+    } else if (endDate) {
+      whereClause = 'WHERE timestamp <= ?';
+      params = [endDate];
+    }
+    
+    // Get total count
+    const countQuery = `SELECT COUNT(*) as total FROM captures ${whereClause}`;
+    const countResult = await db.get(countQuery, params);
+    const totalItems = countResult.total;
+    
+    // Get captures with pagination
+    const capturesQuery = `
+      SELECT * FROM captures 
+      ${whereClause}
+      ORDER BY timestamp DESC 
+      LIMIT ? OFFSET ?
+    `;
+    const captures = await db.all(capturesQuery, [...params, limit, offset]);
+    
+    const totalPages = Math.ceil(totalItems / limit);
+    
+    res.json({
+      data: captures,
+      metadata: {
+        totalItems,
+        totalPages,
+        currentPage: page,
+        limit
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching captures:', error);
+    res.status(500).json({ 
+      error: 'Internal server error',
+      message: 'Failed to fetch captures'
+    });
+  }
 });
 
 // Image upload endpoint

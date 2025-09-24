@@ -10,8 +10,42 @@ const WebcamView = () => {
   const [videoDimensions, setVideoDimensions] = useState({ width: 640, height: 480 })
   const [isCapturing, setIsCapturing] = useState(false)
   const [lastCapture, setLastCapture] = useState<string | null>(null)
+  const [capturedImages, setCapturedImages] = useState<any[]>([])
+  const [showGallery, setShowGallery] = useState(false)
 
   const { detections, error: detectionError, isSmiling, smileThreshold, setSmileThreshold } = useFaceDetection(videoRef)
+
+  // Load existing captures on component mount
+  useEffect(() => {
+    const loadCaptures = async () => {
+      try {
+        const response = await fetch('http://localhost:3002/api/captures?limit=50');
+        if (response.ok) {
+          const result = await response.json();
+          const images = result.data.map((capture: any) => ({
+            id: capture.id,
+            filename: capture.original_path,
+            timestamp: capture.timestamp,
+            faceProcessed: capture.face_coordinates ? true : false,
+            imageUrl: `http://localhost:3002/captures/${capture.original_path}`
+          }));
+          setCapturedImages(images);
+        }
+      } catch (error) {
+        console.error('Error loading captures:', error);
+      }
+    };
+    
+    loadCaptures();
+  }, []);
+
+  // Auto-capture when smiling
+  useEffect(() => {
+    if (isSmiling && !isCapturing) {
+      console.log('😊 Smile detected! Auto-capturing...')
+      handleCapture()
+    }
+  }, [isSmiling, isCapturing])
 
   // Capture function
   const handleCapture = async () => {
@@ -82,6 +116,16 @@ const WebcamView = () => {
         const result = await response.json()
         console.log('Image uploaded successfully:', result)
         setLastCapture(new Date().toLocaleTimeString())
+        
+        // Add to gallery
+        const newImage = {
+          id: result.data.id,
+          filename: result.data.filename,
+          timestamp: result.data.timestamp,
+          faceProcessed: result.data.faceProcessed,
+          imageUrl: `http://localhost:3002/captures/${result.data.filename}`
+        }
+        setCapturedImages(prev => [newImage, ...prev])
       } else {
         console.error('Upload failed:', response.status, response.statusText)
       }
@@ -226,6 +270,22 @@ const WebcamView = () => {
           <span className="font-medium">💡 Tip:</span> Press <kbd className="px-1 py-0.5 bg-gray-200 rounded text-xs">Space</kbd> to capture a photo
         </div>
         
+        <div className="text-center text-xs text-gray-400 bg-blue-50 p-2 rounded">
+          <span className="font-medium">🔗 API Endpoints:</span><br/>
+          <code className="text-blue-600">GET /api/captures</code> - List images<br/>
+          <code className="text-blue-600">POST /api/captures</code> - Upload image<br/>
+          <code className="text-blue-600">GET /captures/{filename}</code> - View image
+        </div>
+        
+        <div className="flex justify-center">
+          <button
+            onClick={() => setShowGallery(!showGallery)}
+            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+          >
+            {showGallery ? 'Hide Gallery' : 'Show Gallery'} ({capturedImages.length})
+          </button>
+        </div>
+        
         <div className="flex items-center gap-2">
           <label className="text-sm text-gray-600 w-24">Smile threshold:</label>
           <input
@@ -240,6 +300,48 @@ const WebcamView = () => {
           <span className="text-sm text-gray-600 w-10 text-right">{(smileThreshold * 100).toFixed(0)}%</span>
         </div>
       </div>
+      
+      {/* Gallery */}
+      {showGallery && (
+        <div className="mt-4 border-t pt-4">
+          <h3 className="text-lg font-semibold text-gray-700 mb-4 text-center">
+            Your captured smiles will appear here
+          </h3>
+          
+          {capturedImages.length === 0 ? (
+            <div className="text-center text-gray-500 py-8">
+              <div className="text-4xl mb-2">📸</div>
+              <p>No images captured yet. Smile or press space to capture!</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {capturedImages.map((image) => (
+                <div key={image.id} className="relative group">
+                  <img
+                    src={image.imageUrl}
+                    alt={`Capture ${image.id}`}
+                    className="w-full h-32 object-cover rounded-lg shadow-md"
+                    onError={(e) => {
+                      console.error('Error loading image:', image.imageUrl)
+                      e.currentTarget.style.display = 'none'
+                    }}
+                  />
+                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 rounded-lg flex items-center justify-center">
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-white text-center">
+                      <div className="text-xs">
+                        {new Date(image.timestamp).toLocaleString()}
+                      </div>
+                      <div className="text-xs mt-1">
+                        {image.faceProcessed ? '✅ Processed' : '⏳ Processing'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }
